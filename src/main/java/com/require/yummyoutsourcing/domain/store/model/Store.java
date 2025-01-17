@@ -26,4 +26,10 @@ public class Store {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_id", nullable = false)
     private Region region;
+
+    public void update(String name, Category category, Region region) {
+        this.name = name;
+        this.category = category;
+        this.region = region;
+    }
 }
