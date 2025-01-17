@@ -1,13 +1,17 @@
 package com.require.yummyoutsourcing.domain.store.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.require.yummyoutsourcing.domain.region.model.Region;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Store {
 
     @Id
@@ -15,7 +19,11 @@ public class Store {
     private Long id;
 
     private String name;
-    private Enum category;
-    private Long groupCount;
-    private Long locationId;
+
+    @Enumerated(EnumType.STRING)
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "region_id", nullable = false)
+    private Region region;
 }
