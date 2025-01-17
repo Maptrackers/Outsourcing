@@ -4,12 +4,12 @@ import com.require.yummyoutsourcing.common.ApiResponse;
 import com.require.yummyoutsourcing.domain.store.dto.StoreRequestDto;
 import com.require.yummyoutsourcing.domain.store.dto.StoreResponseDto;
 import com.require.yummyoutsourcing.domain.store.service.CreateStoreService;
+import com.require.yummyoutsourcing.domain.store.service.DeleteStoreService;
 import com.require.yummyoutsourcing.domain.store.service.ReadStoreService;
+import com.require.yummyoutsourcing.domain.store.service.UpdateStoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/store")
@@ -18,6 +18,8 @@ public class StoreController {
 
     private final CreateStoreService createStoreService;
     private final ReadStoreService readStoreService;
+    private final UpdateStoreService updateStoreService;
+    private final DeleteStoreService deleteStoreService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<StoreResponseDto>> createStore(@RequestBody StoreRequestDto request) {
@@ -39,6 +41,20 @@ public class StoreController {
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) {
         ApiResponse<Object> response = readStoreService.readAllStores(category, regionCode, name, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{storeId}")
+    public ResponseEntity<ApiResponse<StoreResponseDto>> updateStore(
+            @PathVariable("storeId") Long storeId,
+            @RequestBody StoreRequestDto request) {
+        ApiResponse<StoreResponseDto> response = updateStoreService.updateStore(storeId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{storeId}")
+    public ResponseEntity<ApiResponse<Object>> deleteStore(@PathVariable("storeId") Long storeId) {
+        ApiResponse<Object> response = deleteStoreService.deleteStore(storeId);
         return ResponseEntity.ok(response);
     }
 }
