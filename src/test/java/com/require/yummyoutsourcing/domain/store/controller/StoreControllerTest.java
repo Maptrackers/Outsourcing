@@ -20,8 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -111,6 +111,33 @@ public class StoreControllerTest {
 
         MockHttpServletResponse response = mockMvc.perform(get("/api/v1/store")
                         .contentType(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    void deleteStoreTest() throws Exception {
+        Long storeId = 9L;
+
+        MockHttpServletResponse response = mockMvc.perform(delete("/api/v1/store/{storeId}", storeId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    void updateStoreTest() throws Exception {
+        StoreRequestDto request = StoreRequestDto.builder()
+                .name("수정된 맛집가게")
+                .category(Category.CHINESE)
+                .regionId(2L)
+                .build();
+
+        MockHttpServletResponse response = mockMvc.perform(patch("/api/v1/store/{storeId}", 9L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
                 .andReturn().getResponse();
 
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
