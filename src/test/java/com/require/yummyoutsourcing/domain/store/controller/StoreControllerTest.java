@@ -1,9 +1,12 @@
 package com.require.yummyoutsourcing.domain.store.controller;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.require.yummyoutsourcing.common.ApiResponse;
 import com.require.yummyoutsourcing.domain.store.dto.StoreRequestDto;
 import com.require.yummyoutsourcing.domain.store.dto.StoreResponseDto;
+import com.require.yummyoutsourcing.domain.store.model.Category;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -35,8 +39,8 @@ public class StoreControllerTest {
         // given
         StoreRequestDto request = StoreRequestDto.builder()
                 .name("맛집가게")
-                .category("양식")
-                .regionId(1168010100)
+                .category(Category.CHICKEN)
+                .regionId(1L)
                 .build();
 
         // when
@@ -47,7 +51,68 @@ public class StoreControllerTest {
 
         // then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        StoreResponseDto storeResponseDto = objectMapper.readValue(response.getContentAsString(), StoreResponseDto.class);
+
+        ApiResponse<StoreResponseDto> apiResponse = objectMapper.readValue(response.getContentAsString(),
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, StoreResponseDto.class));
+
+        StoreResponseDto storeResponseDto = apiResponse.getData();
+        assertThat(storeResponseDto).isNotNull();
         assertThat(storeResponseDto.getId()).isGreaterThan(0);
+    }
+
+    @Test
+    void test2() throws Exception {
+        StoreRequestDto request = StoreRequestDto.builder()
+                .name("맛집가게")
+                .category(Category.CHICKEN)
+                .regionId(1L)
+                .build();
+
+        MockHttpServletResponse createResponse = mockMvc.perform(post("/api/v1/store")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andReturn().getResponse();
+
+        String responseBody = createResponse.getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseBody);
+        StoreResponseDto createStore = objectMapper.treeToValue(jsonNode.get("data"), StoreResponseDto.class);
+        Long storeId = createStore.getId();
+
+        MockHttpServletResponse response = mockMvc.perform(get("/api/v1/store/{storeId}", storeId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+    }
+
+    @Test
+    void test3() throws Exception {
+        StoreRequestDto request1 = StoreRequestDto.builder()
+                .name("맛집가게")
+                .category(Category.CHICKEN)
+                .regionId(1L)
+                .build();
+
+        StoreRequestDto request2 = StoreRequestDto.builder()
+                .name("맛집가게")
+                .category(Category.JOKBAL_BOSSAM)
+                .regionId(2L)
+                .build();
+
+        mockMvc.perform(post("/api/v1/store")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request1)))
+                .andReturn().getResponse();
+
+        mockMvc.perform(post("/api/v1/store")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request2)))
+                .andReturn().getResponse();
+
+        MockHttpServletResponse response = mockMvc.perform(get("/api/v1/store")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andReturn().getResponse();
+
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 }
