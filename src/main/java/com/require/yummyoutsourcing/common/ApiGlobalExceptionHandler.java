@@ -1,6 +1,7 @@
 package com.require.yummyoutsourcing.common;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -9,7 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  * 컨트롤러에서 발생하는 예외를 한 곳에서 처리하여 응답 형태를 일관되게 유지합니다.
  */
 @ControllerAdvice
-public class AopiGlobalExceptionHandler {
+public class ApiGlobalExceptionHandler {
 
     /**
      * IllegalArgumentException 예외를 처리합니다.
@@ -22,6 +23,15 @@ public class AopiGlobalExceptionHandler {
         ApiResponse<Object> errorResponse = ApiResponse.builder()
                 .data(-1)
                 .message(ex.getMessage())
+                .build();
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        ApiResponse<Object> errorResponse = ApiResponse.builder()
+                .data(-1)
+                .message("입력값이 잘못되었습니다")
                 .build();
         return ResponseEntity.badRequest().body(errorResponse);
     }
