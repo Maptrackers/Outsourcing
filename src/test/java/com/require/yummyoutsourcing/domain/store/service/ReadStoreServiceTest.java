@@ -3,8 +3,10 @@ package com.require.yummyoutsourcing.domain.store.service;
 import com.require.yummyoutsourcing.common.ApiResponse;
 import com.require.yummyoutsourcing.domain.store.dto.StoreResponseDto;
 import com.require.yummyoutsourcing.domain.store.mapper.StoreMapper;
+import com.require.yummyoutsourcing.domain.store.model.Category;
 import com.require.yummyoutsourcing.domain.store.model.Store;
 import com.require.yummyoutsourcing.domain.store.repository.StoreRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReadStoreServiceTest {
@@ -34,7 +36,9 @@ class ReadStoreServiceTest {
     private StoreMapper storeMapper;
 
     @Test
-    void test1() {
+    @DisplayName("가게 조회 성공 테스트")
+    void getStoreById_Success() {
+        // given
         Long storeId = 1L;
         Store store = new Store();
         StoreResponseDto storeResponseDto = new StoreResponseDto();
@@ -42,23 +46,33 @@ class ReadStoreServiceTest {
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(storeMapper.toDto(store)).thenReturn(storeResponseDto);
 
-        ApiResponse<StoreResponseDto> response = readStoreService.readStore(storeId);
+        // when
+        ApiResponse<StoreResponseDto> response = readStoreService.getStoreById(storeId);
 
+        // then
         assertThat(response.getMessage()).isEqualTo("가게 조회 성공");
+        verify(storeRepository, times(1)).findById(storeId);
+        verify(storeMapper, times(1)).toDto(store);
     }
 
     @Test
-    void test2() {
+    @DisplayName("가게 조회 실패 테스트 - 존재하지 않는 ID")
+    void getStoreById_NotFound() {
+        // given
         Long storeId = 1L;
-        when(storeRepository.findById(storeId)).thenThrow(new IllegalArgumentException("가게 조회 실패"));
+        when(storeRepository.findById(storeId)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> readStoreService.readStore((storeId)));
+        // when & then
+        assertThrows(IllegalArgumentException.class, () -> readStoreService.getStoreById(storeId));
+        verify(storeRepository, times(1)).findById(storeId);
     }
 
     @Test
-    void test3() {
-        String category = "CHICKEN";
-        String regionCode = "123";
+    @DisplayName("가게 목록 필터 조회 성공 테스트")
+    void getFilteredStoreList_Success() {
+        // given
+        Category category = Category.CHICKEN;
+        Long regionId = 1L;
         String name = "Test Store";
         int page = 1;
         int size = 10;
@@ -70,26 +84,45 @@ class ReadStoreServiceTest {
 
         Page<Store> storePage = new PageImpl<>(List.of(store1, store2), PageRequest.of(page - 1, size), 2);
 
-        when(storeRepository.findByFilters(category, regionCode, name, PageRequest.of(page - 1, size))).thenReturn(storePage);
+        when(storeRepository.findByFilters(category, regionId, name, PageRequest.of(page - 1, size))).thenReturn(storePage);
         when(storeMapper.toDtoList(storePage.getContent())).thenReturn(List.of(dto1, dto2));
 
-        ApiResponse<Object> response = readStoreService.readAllStores(category, regionCode, name, page, size);
+        // when
+        ApiResponse<Object> response = readStoreService.getFilteredStoreList(category, regionId, name, page, size);
 
+        // then
         assertThat(response.getMessage()).isEqualTo("가게 목록 조회 성공");
+        assertThat(response.getData()).isNotNull();
+        verify(storeRepository, times(1)).findByFilters(category, regionId, name, PageRequest.of(page - 1, size));
+        verify(storeMapper, times(1)).toDtoList(storePage.getContent());
     }
 
     @Test
-    void test4() {
-        String category = "CHICKEN";
-        String regionCode = "123";
+    @DisplayName("가게 목록 조회 실패 테스트 - 필터 조건 불일치")
+    void getFilteredStoreList_NoResults() {
+        // given
+        Category category = Category.CHICKEN;
+        Long regionId = 1L;
         String name = "Test Store";
         int page = 1;
         int size = 10;
 
-        Page<Store> storePage = new PageImpl<>(List.of(), PageRequest.of(page - 1, size), 2);
+        when(storeRepository.findByFilters(category, regionId, name, PageRequest.of(page - 1, size)))
+                .thenReturn(Page.empty(PageRequest.of(page - 1, size)));
 
-        when(storeRepository.findByFilters(category, regionCode, name, PageRequest.of(page - 1, size))).thenThrow(new IllegalArgumentException("가게 목록이 존재하지 않습니다"));
+        // when & then
+        assertThrows(IllegalArgumentException.class, () -> readStoreService.getFilteredStoreList(category, regionId, name, page, size));
+        verify(storeRepository, times(1)).findByFilters(category, regionId, name, PageRequest.of(page - 1, size));
+    }
 
-        assertThrows(IllegalArgumentException.class, () -> readStoreService.readAllStores(category, regionCode, name, page, size));
+    @Test
+    @DisplayName("페이지 정보 유효성 테스트")
+    void validatePageInfo() {
+        // given
+        int page = -1;
+        int size = 0;
+
+        // when & then
+        assertThrows(IllegalArgumentException.class, () -> readStoreService.getFilteredStoreList(null, null, null, page, size));
     }
 }

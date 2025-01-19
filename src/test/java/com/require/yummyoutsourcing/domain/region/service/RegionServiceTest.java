@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,8 +52,8 @@ class RegionServiceTest {
     }
 
     @Test
-    @DisplayName("지역 목록을 정상적으로 조회하면 ApiResponse를 반환해야 한다")
-    void testGetRegions_ShouldReturnApiResponseWithPagedRegions() {
+    @DisplayName("유효한 지역 코드와 페이지 요청으로 지역 목록 조회 시 ApiResponse 반환")
+    void getRegions_WithValidInputs_ShouldReturnApiResponse() {
         // given
         when(regionRepository.findByRegionCodeStartingWith(regionCode, pageable)).thenReturn(regionsPage);
         when(regionMapper.toDtoList(regions)).thenReturn(regionDtoList);
@@ -62,7 +63,7 @@ class RegionServiceTest {
 
         // then
         assertThat(response).isNotNull();
-        assertThat(response.getMessage()).isEqualTo("지역 목록이 성공적으로 조회되었습니다.");
+        assertThat(response.getMessage()).isEqualTo("지역 리스트 조회 성공");
 
         Map<String, Object> responseData = (Map<String, Object>) response.getData();
 
@@ -73,6 +74,38 @@ class RegionServiceTest {
         assertThat(pageableInfo.get("size")).isEqualTo(size);
         assertThat(pageableInfo.get("totalPages")).isEqualTo(1);
         assertThat(pageableInfo.get("totalItems")).isEqualTo((long) regions.size());
+    }
+
+    @Test
+    @DisplayName("페이지 번호가 범위를 초과할 경우 IllegalArgumentException 발생")
+    void getRegions_WithPageOutOfRange_ShouldThrowException() {
+        // given
+        int invalidPage = 100;
+        pageable = PaginationUtils.createPageRequest(invalidPage, size);
+
+        when(regionRepository.findByRegionCodeStartingWith(regionCode, pageable))
+                .thenReturn(Page.empty());
+
+        // when & then
+        assertThatThrownBy(() -> regionService.getRegions(regionCode, invalidPage, size))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("지역 리스트 조회 실패");
+    }
+
+    @Test
+    @DisplayName("잘못된 지역 코드로 조회 시 IllegalArgumentException 발생")
+    void getRegions_WithInvalidRegionCode_ShouldThrowException() {
+        // given
+        String invalidRegionCode = "99999";
+        pageable = PaginationUtils.createPageRequest(page, size);
+
+        when(regionRepository.findByRegionCodeStartingWith(invalidRegionCode, pageable))
+                .thenReturn(Page.empty());
+
+        // when & then
+        assertThatThrownBy(() -> regionService.getRegions(invalidRegionCode, page, size))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("지역 리스트 조회 실패");
     }
 
     private void initializeTestParameters() {
