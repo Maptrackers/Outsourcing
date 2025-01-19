@@ -17,15 +17,15 @@ public class RegionController {
     private final RegionService regionService;
 
     /**
-     * 지정된 지역 코드로 시작하는 지역 목록을 페이지 단위로 조회합니다.
+     * 지역 코드 접두사로 필터링하여 지역 목록을 페이지 단위로 조회합니다.
      *
-     * @param regionCode 조회할 지역 코드의 접두사
-     * @param page       조회할 페이지 번호 (1부터 시작)
-     * @param size       페이지당 항목 수
-     * @return 지역 목록과 페이지네이션 정보를 포함한 응답 객체
+     * @param regionCode 지역 코드를 필터링하기 위한 접두사
+     * @param page       조회할 페이지 번호 (1부터 시작, 기본값: 1)
+     * @param size       페이지당 항목 수 (기본값: 10)
+     * @return 지역 목록과 페이지네이션 정보를 포함한 ApiResponse 객체
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<Object>> getRegionsByCode(
+    public ResponseEntity<ApiResponse<Object>> fetchRegionsByPrefix(
             @RequestParam(name = "regionCode") String regionCode,
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) {
